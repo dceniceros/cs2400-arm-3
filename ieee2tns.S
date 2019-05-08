@@ -14,45 +14,68 @@
 		;          `FILL` region to hold the IEEE 754 results.
 		;
 
-	LDR R0, =EEEI
-	LDR R1,  [R0]
-	LDR R0, =TNS
-	LDR R2,  [R0]
-	LDR R0, =SELECT
-	LDR R0, [R0]
-	CBZ R0, EEEI32
+		LDR		R0, =floats
+		LDR		R1, [R0]
+		LDR		R2, [R0, #4]
+		LDR		R0, =SELECT
+		LDR		R0, [R0]
+		CMP		R0, #0
+		BEQ		EEEI32
 
 tns
-	AND R3, R1, #0X80000000
-	AND R4, R1, #0X7F800000
-	MOV R6, #0X007fffff
-	AND R5, R1, R6
-	LSR R4, #23
-	LSL R5, #8
-	SUB R4,#0X7F
-	ADD R4,#0X100
-	ORR R3, R3, R4
-	ORR R3, R3, R5
-	CMP R2, R3
-	BNE notE
-	B E
+		LDR		R0, =name
+		LDR		R10, [R0]
+		LDR		R11, [R0, #4]
+		LDR		R12, [R0, #8]
+		AND		R3, R1, R10
+		AND		R4, R1, R11
+		AND		R5, R1, R12
+		LSR		R4, R4, #23
+		LSL		R5, R5, #8
+		SUB		R4, R4, #0X7F
+		ADD		R4, R4, #0X100
+		ORR		R3, R3, R4
+		ORR		R3, R3, R5
+		CMP		R2, R3
+		BNE		notE
+		B		nums
 
-EEEI
-	AND R3, R2, #0X80000000
-	MOV R6, #0X7FFFFE00
-	AND R4, R2, R6
-	MOV R7, #0X000001FF
-	AND R5, R2, R7
-	SUB R5, #0X100
+EEEI32
+		LDR		R0, =sname
+		LDR		R10, [R0]
+		LDR		R11, [R0, #4]
+		LDR		R12, [R0, #8]
+		AND		R3, R2, R10
+		MOV		R6, R11
+		AND		R4, R2, R6
+		AND		R5, R2, R12
+		SUB		R5, R5, #0X100
+		ADD		R5, R5, #0X7F
+		LSR		R4, R4, #8
+		LSL		R5, R4, #23
+		ORR		R3, R3, R4
+		ORR		R3, R3, R5
+		CMP		R1, R4
+		BNE		notE
 
-	ADD R5, #0X7F
-	LSR R4, #8
-	LSL R5, #23
-	ORR R3, R3, R4
-	ORR R3, R3, R5
-	CMP R1, R4
-	BNE notE
-	B E
+nums
+		LDR		R4, =result
+		LDR		R5, [R4]
+		B		store
 
-floats	DCD	0xa0bcff0d, 0x13c0adea
-tns 		FILL 16
+notE
+		LDR		R4, =result
+		LDR		R5, [R4, #4]
+
+store
+		LDR		R0, =tns
+		STR		R5, [R0]
+
+stop	END
+
+SELECT	DCD		0			;if its 0, its eeei to tns, if its a 1, its the other way around
+result	DCD		0, 1 		;0 if its equal. 1 if it is not equal
+name	DCD		0X80000000, 0X7F800000, 0X007fffff
+sname	DCD		0X80000000, 0X7FFFFE00, 0X000001FF
+floats	DCD		0xa0bcff0d, 0x13c0adea
+tns		FILL	16
